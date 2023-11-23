@@ -83,8 +83,34 @@ public class MyHashSet<E> implements Set<E> {
      * @return an iterator over the elements in this set
      */
     @Override
-    public Iterator<String> iterator() {
-        return null;
+    public Iterator<E> iterator() {
+        return MyIterator;
+    }
+
+    private class MyIterator implements Iterator<E>{
+        int outIndex = 0;
+        int inIndex = 0;
+        E returnVal;
+
+        public boolean hasNext(){
+            return outIndex != backingStore.length || inIndex != backingStore[backingStore.length - 1].size();
+        }
+
+        public E next(){
+            if(!hasNext()){
+                throw new NoSuchElementException();
+            }
+
+            if(backingStore[outIndex].size() > inIndex) {
+                returnVal = backingStore[outIndex].get(inIndex++);
+            }
+            else{
+                inIndex = 0;
+                returnVal = backingStore[outIndex++].get(inIndex);
+            }
+
+            return returnVal;
+        };
     }
 
     /**
