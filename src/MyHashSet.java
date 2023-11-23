@@ -1,10 +1,12 @@
 import java.util.*;
 
 /**
+ * This is a custom HashSet that implement the Set interface
  * TODO An implementation of ... that ...
  */
-public class MyHashSet implements Set<String> {
-    private List<String>[] backingStore;
+
+public class MyHashSet<E> implements Set<E> {
+    private List<E>[] backingStore;
     private final double LOAD_FACTOR;
     private int size = 0, mod_count = 0;
 
@@ -40,7 +42,7 @@ public class MyHashSet implements Set<String> {
      */
     @Override
     public int size() {
-        return 0;
+        return Math.min(size, Integer.MAX_VALUE);
     }
 
     /**
@@ -50,7 +52,7 @@ public class MyHashSet implements Set<String> {
      */
     @Override
     public boolean isEmpty() {
-        return false;
+        return size == 0;
     }
 
     /**
@@ -153,6 +155,11 @@ public class MyHashSet implements Set<String> {
         return null;
     }
 
+    @Override
+    public boolean add(E e) {
+        return false;
+    }
+
     /**
      * Adds the specified element to this set if it is not already present
      * (optional operation).  More formally, adds the specified element
@@ -235,6 +242,11 @@ public class MyHashSet implements Set<String> {
      */
     @Override
     public boolean containsAll(Collection<?> c) {
+        return false;
+    }
+
+    @Override
+    public boolean addAll(Collection<? extends E> c) {
         return false;
     }
 
