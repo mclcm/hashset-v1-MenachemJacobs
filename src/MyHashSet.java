@@ -1,3 +1,4 @@
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -34,10 +35,7 @@ public class MyHashSet<E> implements Set<E> {
             throw new IllegalArgumentException("capacity cannot be negative");
         }
 
-        backingStore = new List[initialCapacity];
-        for (int i = 0; i < backingStore.length; i++) {
-            backingStore[i] = new ArrayList<E>();
-        }
+        backingStore = newBackArray(initialCapacity);
         LOAD_FACTOR = loadFactor;
     }
 
@@ -81,6 +79,10 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean contains(Object o) {
+        if (!this.getClass().getComponentType().isAssignableFrom(o.getClass())) {
+            throw new ClassCastException("Incompatible array type for the elements in the list.");
+        }
+
         return backingStore[Math.abs(Objects.hashCode(o)) % backingStore.length].contains(o);
     }
 
@@ -102,7 +104,7 @@ public class MyHashSet<E> implements Set<E> {
         Object returnVal;
 
         public boolean hasNext(){
-            return outIndex != backingStore.length || inIndex != backingStore[backingStore.length - 1].size();
+            return outIndex < backingStore.length || inIndex < backingStore[backingStore.length - 1].size();
         }
 
         public E next(){
@@ -111,7 +113,7 @@ public class MyHashSet<E> implements Set<E> {
             }
 
             //Every so often it matters that you remember how post-ops work, as in this if-tree.
-            if(backingStore[outIndex].size() <= inIndex) {
+            if(backingStore[outIndex].size() > inIndex) {
                 returnVal = backingStore[outIndex].get(inIndex++);
             }
             else{
@@ -120,7 +122,7 @@ public class MyHashSet<E> implements Set<E> {
             }
 
             return (E)returnVal;
-        };
+        }
     }
 
     /**
@@ -194,7 +196,19 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public <T> T[] toArray(T[] a) {
-        return null;
+        if (a.length < this.size) {
+            a = (T[]) Array.newInstance(a.getClass().getComponentType(), size);
+        }
+
+        int i = 0;
+
+        for (E el : this) {
+            if (!a.getClass().getComponentType().isAssignableFrom(el.getClass())) {
+                throw new IllegalArgumentException("Incompatible array type for the elements in the list.");
+            }
+            a[i++] = (T) el;
+        }
+        return a;
     }
 
     /**
@@ -228,11 +242,15 @@ public class MyHashSet<E> implements Set<E> {
      *                                       prevents it from being added to this set
      */
     @Override
-    public boolean add(E e) {
+    public boolean add(Object e) {
+        if (!this.getClass().getComponentType().isAssignableFrom(e.getClass())) {
+            throw new ClassCastException("Element to add is of type incompatible with the Set type");
+        }
+
         if(size > backingStore.length * LOAD_FACTOR)
             refactor();
 
-        boolean returnVal = backingStore[Math.abs(Objects.hashCode(e)) % backingStore.length].add(e);
+        boolean returnVal = backingStore[Math.abs(Objects.hashCode(e)) % backingStore.length].add((E) e);
 
         if(size + 1 == Integer.MAX_VALUE && !overFlowFlag)
             overFlowFlag = true;
@@ -243,13 +261,24 @@ public class MyHashSet<E> implements Set<E> {
     }
 
     private void refactor(){
-        List[] newBackArray = new List[size * 2];
         Object[] holdingRay = toArray();
-        backingStore = newBackArray;
+        backingStore = newBackArray(size * 2);
+
         //TODO change this to addAll() once that exists
         for (Object el : holdingRay) {
-            add((E)el);
+            add(el);
         }
+    }
+
+    private List[] newBackArray(int newSize){
+        List[] newBackArray = new List[newSize];
+        Object[] holdingRay = toArray();
+
+        for (int i = 0; i < newBackArray.length; i++) {
+            backingStore[i] = new ArrayList<E>();
+        }
+
+        return newBackArray;
     }
 
     /**
@@ -275,7 +304,11 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean remove(Object o) {
-        boolean returnVal = backingStore[o.hashCode() % backingStore.length].add(o);
+        if (!this.getClass().getComponentType().isAssignableFrom(o.getClass())) {
+            throw new ClassCastException("Element to remove is of type incompatible with the Set type");
+        }
+
+        boolean returnVal = backingStore[o.hashCode() % backingStore.length].remove(o);
         size--;
 
         return returnVal;
@@ -327,6 +360,14 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean addAll(Collection<? extends E> c) {
+        if (!this.getClass().getComponentType().isAssignableFrom(c.getClass())) {
+            throw new ClassCastException("Elements to add are of type incompatible with the Set type");
+        }
+
+        for (Object el : c) {
+            add(el);
+        }
+
         return true;
     }
 
