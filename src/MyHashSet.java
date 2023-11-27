@@ -79,9 +79,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean contains(Object o) {
-        if (!this.getClass().getComponentType().isAssignableFrom(o.getClass())) {
-            throw new ClassCastException("Incompatible array type for the elements in the list.");
-        }
+        classCompatibilityCheck(o.getClass());
 
         return backingStore[Math.abs(Objects.hashCode(o)) % backingStore.length].contains(o);
     }
@@ -98,30 +96,32 @@ public class MyHashSet<E> implements Set<E> {
         return new MyIterator();
     }
 
-    private class MyIterator implements Iterator<E>{
+    private class MyIterator implements Iterator<E> {
         int outIndex = 0;
         int inIndex = 0;
         Object returnVal;
+        int OgModCount = mod_count;
 
-        public boolean hasNext(){
+        public boolean hasNext() {
             return outIndex < backingStore.length || inIndex < backingStore[backingStore.length - 1].size();
         }
 
-        public E next(){
-            if(!hasNext()){
+        public E next() {
+            if (!hasNext()) {
                 throw new NoSuchElementException();
             }
 
             //Every so often it matters that you remember how post-ops work, as in this if-tree.
-            if(backingStore[outIndex].size() > inIndex) {
+            if (backingStore[outIndex].size() > inIndex) {
                 returnVal = backingStore[outIndex].get(inIndex++);
-            }
-            else{
+            } else {
                 inIndex = 0;
                 returnVal = backingStore[outIndex++].get(inIndex);
             }
 
-            return (E)returnVal;
+            if(OgModCount != mod_count)
+                throw new ConcurrentModificationException("The Iterator has detected a modification to the Set. This is not allowed.");
+            return (E) returnVal;
         }
     }
 
@@ -146,7 +146,7 @@ public class MyHashSet<E> implements Set<E> {
         Object[] outRay = new Object[size];
         int counter = 0;
 
-        for (E el: this) {
+        for (E el : this) {
             outRay[counter++] = el;
         }
         return outRay;
@@ -196,7 +196,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public <T> T[] toArray(T[] a) {
-        if (a.length < this.size) {
+        if (a.length < size) {
             a = (T[]) Array.newInstance(a.getClass().getComponentType(), size);
         }
 
@@ -207,6 +207,10 @@ public class MyHashSet<E> implements Set<E> {
                 throw new IllegalArgumentException("Incompatible array type for the elements in the list.");
             }
             a[i++] = (T) el;
+        }
+        //I debated whether to use a while loop for the second loop, but decided this was most readable
+        for (int j = i; j < a.length; j++) {
+            a[i++] = null;
         }
         return a;
     }
@@ -243,24 +247,23 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean add(Object e) {
-        if (!this.getClass().getComponentType().isAssignableFrom(e.getClass())) {
-            throw new ClassCastException("Element to add is of type incompatible with the Set type");
-        }
+        classCompatibilityCheck(e.getClass());
 
-        if(size > backingStore.length * LOAD_FACTOR)
+        if (size > backingStore.length * LOAD_FACTOR)
             refactor();
 
         boolean returnVal = backingStore[Math.abs(Objects.hashCode(e)) % backingStore.length].add((E) e);
 
-        if(size + 1 == Integer.MAX_VALUE && !overFlowFlag)
+        if (size + 1 == Integer.MAX_VALUE && !overFlowFlag)
             overFlowFlag = true;
 
         size++;
+        mod_count++;
 
         return returnVal;
     }
 
-    private void refactor(){
+    private void refactor() {
         Object[] holdingRay = toArray();
         backingStore = newBackArray(size * 2);
 
@@ -270,7 +273,7 @@ public class MyHashSet<E> implements Set<E> {
         }
     }
 
-    private List[] newBackArray(int newSize){
+    private List[] newBackArray(int newSize) {
         List[] newBackArray = new List[newSize];
         Object[] holdingRay = toArray();
 
@@ -304,12 +307,11 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean remove(Object o) {
-        if (!this.getClass().getComponentType().isAssignableFrom(o.getClass())) {
-            throw new ClassCastException("Element to remove is of type incompatible with the Set type");
-        }
+        classCompatibilityCheck(o.getClass());
 
         boolean returnVal = backingStore[o.hashCode() % backingStore.length].remove(o);
         size--;
+        mod_count++;
 
         return returnVal;
     }
@@ -335,6 +337,8 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean containsAll(Collection<?> c) {
+        classCompatibilityCheck(c.getClass());
+
         return false;
     }
 
@@ -360,9 +364,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean addAll(Collection<? extends E> c) {
-        if (!this.getClass().getComponentType().isAssignableFrom(c.getClass())) {
-            throw new ClassCastException("Elements to add are of type incompatible with the Set type");
-        }
+        classCompatibilityCheck(c.getClass());
 
         for (Object el : c) {
             add(el);
@@ -394,7 +396,17 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean retainAll(Collection<?> c) {
-        return false;
+        int oldSize = size;
+
+        classCompatibilityCheck(c.getClass());
+
+        List<E> holder = new LinkedList<E>();
+
+        for (Object el : c) {
+            remove(el);
+        }
+
+        return oldSize == size;
     }
 
     /**
@@ -420,6 +432,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean removeAll(Collection<?> c) {
+        classCompatibilityCheck(c.getClass());
         return false;
     }
 
@@ -433,5 +446,11 @@ public class MyHashSet<E> implements Set<E> {
     @Override
     public void clear() {
 
+    }
+
+    private void classCompatibilityCheck(Class o) {
+        if (!this.getClass().getComponentType().isAssignableFrom(o)) {
+            throw new ClassCastException("One or more of the elements passed as arguments is of a type incompatible with the Set type");
+        }
     }
 }
