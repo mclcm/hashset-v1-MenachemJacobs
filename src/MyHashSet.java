@@ -1,10 +1,16 @@
 import java.util.*;
 
 /**
- * This is a custom HashSet that implement the Set interface
- * TODO An implementation of ... that ...
+ * MyHashSet is a custom implementation of the Set interface in Java, providing a basic HashSet functionality.
+ *
+ * <p>The implementation supports dynamic resizing of the underlying array when the load factor is exceeded,
+ * ensuring optimal performance for a varying number of elements.
+ *
+ * @param <E> the type of elements maintained by this set
+ * @see Set
+ * @see HashSet
+ * @see List
  */
-
 public class MyHashSet<E> implements Set<E> {
     private List[] backingStore;
     private final double LOAD_FACTOR;
@@ -29,9 +35,11 @@ public class MyHashSet<E> implements Set<E> {
         }
 
         backingStore = new List[initialCapacity];
+        for (int i = 0; i < backingStore.length; i++) {
+            backingStore[i] = new ArrayList<E>();
+        }
         LOAD_FACTOR = loadFactor;
     }
-
 
 
     /**
@@ -73,8 +81,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean contains(Object o) {
-        //TODO see to
-        return false;
+        return backingStore[Math.abs(Objects.hashCode(o)) % backingStore.length].contains(o);
     }
 
     /**
@@ -104,7 +111,7 @@ public class MyHashSet<E> implements Set<E> {
             }
 
             //Every so often it matters that you remember how post-ops work, as in this if-tree.
-            if(backingStore[outIndex].size() >= inIndex) {
+            if(backingStore[outIndex].size() <= inIndex) {
                 returnVal = backingStore[outIndex].get(inIndex++);
             }
             else{
@@ -225,7 +232,7 @@ public class MyHashSet<E> implements Set<E> {
         if(size > backingStore.length * LOAD_FACTOR)
             refactor();
 
-        boolean returnVal = backingStore[e.hashCode() % backingStore.length].add(e);
+        boolean returnVal = backingStore[Math.abs(Objects.hashCode(e)) % backingStore.length].add(e);
 
         if(size + 1 == Integer.MAX_VALUE && !overFlowFlag)
             overFlowFlag = true;
