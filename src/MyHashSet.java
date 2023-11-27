@@ -6,9 +6,10 @@ import java.util.*;
  */
 
 public class MyHashSet<E> implements Set<E> {
-    private List<E>[] backingStore;
+    private List[] backingStore;
     private final double LOAD_FACTOR;
     private int size = 0, mod_count = 0;
+    private boolean overFlowFlag = false;
 
     public MyHashSet() {
         this(16, .75);
@@ -42,7 +43,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public int size() {
-        return Math.min(size, Integer.MAX_VALUE);
+        return overFlowFlag ? size() : Integer.MAX_VALUE;
     }
 
     /**
@@ -72,6 +73,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean contains(Object o) {
+        //TODO see to
         return false;
     }
 
@@ -84,13 +86,13 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public Iterator<E> iterator() {
-        return MyIterator;
+        return new MyIterator();
     }
 
     private class MyIterator implements Iterator<E>{
         int outIndex = 0;
         int inIndex = 0;
-        E returnVal;
+        Object returnVal;
 
         public boolean hasNext(){
             return outIndex != backingStore.length || inIndex != backingStore[backingStore.length - 1].size();
@@ -101,7 +103,8 @@ public class MyHashSet<E> implements Set<E> {
                 throw new NoSuchElementException();
             }
 
-            if(backingStore[outIndex].size() > inIndex) {
+            //Every so often it matters that you remember how post-ops work, as in this if-tree.
+            if(backingStore[outIndex].size() >= inIndex) {
                 returnVal = backingStore[outIndex].get(inIndex++);
             }
             else{
@@ -109,7 +112,7 @@ public class MyHashSet<E> implements Set<E> {
                 returnVal = backingStore[outIndex++].get(inIndex);
             }
 
-            return returnVal;
+            return (E)returnVal;
         };
     }
 
@@ -131,7 +134,13 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public Object[] toArray() {
-        return new Object[0];
+        Object[] outRay = new Object[size];
+        int counter = 0;
+
+        for (E el: this) {
+            outRay[counter++] = el;
+        }
+        return outRay;
     }
 
     /**
@@ -181,11 +190,6 @@ public class MyHashSet<E> implements Set<E> {
         return null;
     }
 
-    @Override
-    public boolean add(E e) {
-        return false;
-    }
-
     /**
      * Adds the specified element to this set if it is not already present
      * (optional operation).  More formally, adds the specified element
@@ -204,7 +208,7 @@ public class MyHashSet<E> implements Set<E> {
      * Individual set implementations should clearly document any
      * restrictions on the elements that they may contain.
      *
-     * @param s element to be added to this set
+     * @param e element to be added to this set
      * @return {@code true} if this set did not already contain the specified
      * element
      * @throws UnsupportedOperationException if the {@code add} operation
@@ -217,8 +221,28 @@ public class MyHashSet<E> implements Set<E> {
      *                                       prevents it from being added to this set
      */
     @Override
-    public boolean add(String s) {
-        return false;
+    public boolean add(E e) {
+        if(size > backingStore.length * LOAD_FACTOR)
+            refactor();
+
+        boolean returnVal = backingStore[e.hashCode() % backingStore.length].add(e);
+
+        if(size + 1 == Integer.MAX_VALUE && !overFlowFlag)
+            overFlowFlag = true;
+
+        size++;
+
+        return returnVal;
+    }
+
+    private void refactor(){
+        List[] newBackArray = new List[size * 2];
+        Object[] holdingRay = toArray();
+        backingStore = newBackArray;
+        //TODO change this to addAll() once that exists
+        for (Object el : holdingRay) {
+            add((E)el);
+        }
     }
 
     /**
@@ -244,7 +268,10 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean remove(Object o) {
-        return false;
+        boolean returnVal = backingStore[o.hashCode() % backingStore.length].add(o);
+        size--;
+
+        return returnVal;
     }
 
     /**
@@ -271,11 +298,6 @@ public class MyHashSet<E> implements Set<E> {
         return false;
     }
 
-    @Override
-    public boolean addAll(Collection<? extends E> c) {
-        return false;
-    }
-
     /**
      * Adds all of the elements in the specified collection to this set if
      * they're not already present (optional operation).  If the specified
@@ -297,8 +319,8 @@ public class MyHashSet<E> implements Set<E> {
      *                                       specified collection prevents it from being added to this set
      */
     @Override
-    public boolean addAll(Collection<? extends String> c) {
-        return false;
+    public boolean addAll(Collection<? extends E> c) {
+        return true;
     }
 
     /**
