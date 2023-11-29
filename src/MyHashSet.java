@@ -2,7 +2,7 @@ import java.lang.reflect.Array;
 import java.util.*;
 
 /**
- * MyHashSet is a custom implementation of the Set interface in Java, providing a basic HashSet functionality.
+ * MyHashSet is a custom implementation of the Set interface.
  *
  * <p>The implementation supports dynamic resizing of the underlying array when the load factor is exceeded,
  * ensuring optimal performance for a varying number of elements.
@@ -13,19 +13,23 @@ import java.util.*;
  * @see List
  */
 public class MyHashSet<E> implements Set<E> {
-    private List[] backingStore;
+    private List<E>[] backingStore;
+    private static final int DEFAULT_INT_CAP = 16;
     private final double LOAD_FACTOR;
     private int size = 0, mod_count = 0;
     private boolean overFlowFlag = false;
 
+    //Default Constructor
     public MyHashSet() {
-        this(16, .75);
+        this(DEFAULT_INT_CAP, .75);
     }
 
+    //Capacity Constructor
     public MyHashSet(int initialCapacity) {
         this(initialCapacity, .75);
     }
 
+    //Specified Constructor
     public MyHashSet(int initialCapacity, double loadFactor) {
         if (loadFactor <= 0) {
             throw new IllegalArgumentException("load factor must be greater than 0");
@@ -35,7 +39,7 @@ public class MyHashSet<E> implements Set<E> {
             throw new IllegalArgumentException("capacity cannot be negative");
         }
 
-        backingStore = newBackArray(initialCapacity);
+        backingStore = new List[initialCapacity];
         LOAD_FACTOR = loadFactor;
     }
 
@@ -49,7 +53,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public int size() {
-        return overFlowFlag ? size() : Integer.MAX_VALUE;
+        return overFlowFlag ? Integer.MAX_VALUE : size;
     }
 
     /**
@@ -96,30 +100,50 @@ public class MyHashSet<E> implements Set<E> {
         return new MyIterator();
     }
 
+    /**
+     * This private inner class implements the Iterator interface to iterate over
+     * elements in the Set.
+     */
     private class MyIterator implements Iterator<E> {
         int outIndex = 0;
         int inIndex = 0;
         Object returnVal;
         int OgModCount = mod_count;
 
+        /**
+         * Returns true if there are more elements to iterate over.
+         *
+         * @return {@code true} if there are more elements, {@code false} otherwise.
+         */
         public boolean hasNext() {
             return outIndex < backingStore.length || inIndex < backingStore[backingStore.length - 1].size();
         }
 
+        /**
+         * Returns the next element in the iteration.
+         *
+         * @return the next element in the iteration.
+         * @throws NoSuchElementException          if there are no more elements to iterate.
+         * @throws ConcurrentModificationException if the underlying set is modified
+         *                                         while iterating.
+         */
         public E next() {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
 
-            //Every so often it matters that you remember how post-ops work, as in this if-tree.
+            //If the current position is not at the bottom of the current outer-index, continue on toward the bottom
             if (backingStore[outIndex].size() > inIndex) {
                 returnVal = backingStore[outIndex].get(inIndex++);
-            } else {
+            }
+            //If the current position exceeds the length of the current outer-index, move to next outer index
+            else {
                 inIndex = 0;
                 returnVal = backingStore[outIndex++].get(inIndex);
             }
 
-            if(OgModCount != mod_count)
+            //check for concurrent mod
+            if (OgModCount != mod_count)
                 throw new ConcurrentModificationException("The Iterator has detected a modification to the Set. This is not allowed.");
             return (E) returnVal;
         }
@@ -196,6 +220,9 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public <T> T[] toArray(T[] a) {
+        //TODO fix this test
+        classCompatibilityCheck(a.getClass());
+
         if (a.length < size) {
             a = (T[]) Array.newInstance(a.getClass().getComponentType(), size);
         }
@@ -203,15 +230,13 @@ public class MyHashSet<E> implements Set<E> {
         int i = 0;
 
         for (E el : this) {
-            if (!a.getClass().getComponentType().isAssignableFrom(el.getClass())) {
-                throw new IllegalArgumentException("Incompatible array type for the elements in the list.");
-            }
             a[i++] = (T) el;
         }
-        //I debated whether to use a while loop for the second loop, but decided this was most readable
+        //I debated whether to use a while loop for filling the remainder of the passed collection, but decided this was most readable
         for (int j = i; j < a.length; j++) {
             a[i++] = null;
         }
+
         return a;
     }
 
@@ -252,7 +277,16 @@ public class MyHashSet<E> implements Set<E> {
         if (size > backingStore.length * LOAD_FACTOR)
             refactor();
 
-        boolean returnVal = backingStore[Math.abs(Objects.hashCode(e)) % backingStore.length].add((E) e);
+        int index = Math.abs(Objects.hashCode(e)) % backingStore.length;
+
+        if (backingStore[index] == null) {
+            backingStore[index] = new ArrayList<>();
+        }
+
+        List reference = backingStore[index];
+        boolean returnVal = reference.add(e);
+        size++;
+        mod_count++;
 
         if (size + 1 == Integer.MAX_VALUE && !overFlowFlag)
             overFlowFlag = true;
@@ -265,23 +299,11 @@ public class MyHashSet<E> implements Set<E> {
 
     private void refactor() {
         Object[] holdingRay = toArray();
-        backingStore = newBackArray(size * 2);
+        backingStore = new List[size * 2];
 
-        //TODO change this to addAll() once that exists
         for (Object el : holdingRay) {
             add(el);
         }
-    }
-
-    private List[] newBackArray(int newSize) {
-        List[] newBackArray = new List[newSize];
-        Object[] holdingRay = toArray();
-
-        for (int i = 0; i < newBackArray.length; i++) {
-            backingStore[i] = new ArrayList<E>();
-        }
-
-        return newBackArray;
     }
 
     /**
@@ -400,8 +422,6 @@ public class MyHashSet<E> implements Set<E> {
 
         classCompatibilityCheck(c.getClass());
 
-        List<E> holder = new LinkedList<E>();
-
         for (Object el : c) {
             remove(el);
         }
@@ -445,10 +465,11 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public void clear() {
-
+        backingStore = new List[DEFAULT_INT_CAP];
+        mod_count++;
     }
 
-    private void classCompatibilityCheck(Class o) {
+    private void classCompatibilityCheck(Class<?> o) {
         if (!this.getClass().getComponentType().isAssignableFrom(o)) {
             throw new ClassCastException("One or more of the elements passed as arguments is of a type incompatible with the Set type");
         }
