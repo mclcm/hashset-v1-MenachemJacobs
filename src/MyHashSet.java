@@ -220,8 +220,9 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public <T> T[] toArray(T[] a) {
-        //TODO fix this test
-        classCompatibilityCheck(a.getClass());
+        if (!this.getClass().getComponentType().isAssignableFrom(a.getClass())) {
+            throw new ArrayStoreException("Passed array is of a type incompatible with the Set type");
+        }
 
         if (a.length < size) {
             a = (T[]) Array.newInstance(a.getClass().getComponentType(), size);
@@ -272,6 +273,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean add(Object e) {
+        boolean returnVal;
         classCompatibilityCheck(e.getClass());
 
         if (size > backingStore.length * LOAD_FACTOR)
@@ -284,15 +286,12 @@ public class MyHashSet<E> implements Set<E> {
         }
 
         List<E> reference = backingStore[index];
-        boolean returnVal = reference.add((E) e);
+        returnVal = reference.add((E) e);
         size++;
         mod_count++;
 
         if (size + 1 == Integer.MAX_VALUE && !overFlowFlag)
             overFlowFlag = true;
-
-        size++;
-        mod_count++;
 
         return returnVal;
     }
@@ -360,9 +359,10 @@ public class MyHashSet<E> implements Set<E> {
     @Override
     public boolean containsAll(Collection<?> c) {
         boolean returnVal = true;
-        classCompatibilityCheck(c.getClass());
 
-        for (Object el: c) {
+        for (Object el : c) {
+
+            classCompatibilityCheck(el.getClass());
             returnVal = contains(el);
             if (!returnVal)
                 break;
@@ -393,9 +393,9 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean addAll(Collection<? extends E> c) {
-        classCompatibilityCheck(c.getClass());
-
         for (Object el : c) {
+
+            classCompatibilityCheck(el.getClass());
             add(el);
         }
 
@@ -427,9 +427,10 @@ public class MyHashSet<E> implements Set<E> {
     public boolean retainAll(Collection<?> c) {
         int oldSize = size;
 
-        classCompatibilityCheck(c.getClass());
 
         for (Object el : c) {
+
+            classCompatibilityCheck(el.getClass());
             remove(el);
         }
 
