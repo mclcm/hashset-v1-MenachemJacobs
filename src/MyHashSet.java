@@ -232,7 +232,7 @@ public class MyHashSet<E> implements Set<E> {
         for (E el : this) {
             a[i++] = (T) el;
         }
-        //I debated whether to use a while loop for filling the remainder of the passed collection, but decided this was most readable
+        //I debated whether to use a while loop to fill the rest of the passed collection, but decided this was most readable
         for (int j = i; j < a.length; j++) {
             a[i++] = null;
         }
@@ -283,8 +283,8 @@ public class MyHashSet<E> implements Set<E> {
             backingStore[index] = new ArrayList<>();
         }
 
-        List reference = backingStore[index];
-        boolean returnVal = reference.add(e);
+        List<E> reference = backingStore[index];
+        boolean returnVal = reference.add((E) e);
         size++;
         mod_count++;
 
@@ -331,7 +331,7 @@ public class MyHashSet<E> implements Set<E> {
     public boolean remove(Object o) {
         classCompatibilityCheck(o.getClass());
 
-        boolean returnVal = backingStore[o.hashCode() % backingStore.length].remove(o);
+        boolean returnVal = backingStore[Math.abs(o.hashCode()) % backingStore.length].remove(o);
         size--;
         mod_count++;
 
@@ -359,9 +359,16 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean containsAll(Collection<?> c) {
+        boolean returnVal = true;
         classCompatibilityCheck(c.getClass());
 
-        return false;
+        for (Object el: c) {
+            returnVal = contains(el);
+            if (!returnVal)
+                break;
+        }
+
+        return returnVal;
     }
 
     /**
