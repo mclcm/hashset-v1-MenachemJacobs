@@ -108,7 +108,7 @@ public class MyHashSet<E> implements Set<E> {
         int outIndex = 0;
         int inIndex = 0;
         Object returnVal;
-        int OgModCount = mod_count;
+        int originalModCount = mod_count;
 
         /**
          * Returns true if there are more elements to iterate over.
@@ -132,19 +132,23 @@ public class MyHashSet<E> implements Set<E> {
                 throw new NoSuchElementException();
             }
 
-            //If the current position is not at the bottom of the current outer-index, continue on toward the bottom
-            if (backingStore[outIndex].size() > inIndex) {
-                returnVal = backingStore[outIndex].get(inIndex++);
-            }
-            //If the current position exceeds the length of the current outer-index, move to next outer index
-            else {
+            //If the current position is at the bottom of the current outer-index, set innerIndex to zero and iterate outerIndex
+            if(inIndex >= backingStore[outIndex].size() || backingStore[outIndex] == null){
                 inIndex = 0;
-                returnVal = backingStore[outIndex++].get(inIndex);
+                outIndex++;
             }
 
+            //If there is no list at the index in backingStore, iterate the pointer
+            while(backingStore[outIndex] == null){
+                outIndex++;
+            }
+
+            returnVal = backingStore[outIndex].get(inIndex++);
+
             //check for concurrent mod
-            if (OgModCount != mod_count)
+            if (originalModCount != mod_count)
                 throw new ConcurrentModificationException("The Iterator has detected a modification to the Set. This is not allowed.");
+
             return (E) returnVal;
         }
     }
@@ -167,7 +171,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public Object[] toArray() {
-        Object[] outRay = new Object[size];
+        Object[] outRay = (E[])new Object[size];
         int counter = 0;
 
         for (E el : this) {
@@ -220,20 +224,23 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public <T> T[] toArray(T[] a) {
+        //my one implementation of my ArrayStoreException code as I wrote it originally
         if (!this.getClass().getComponentType().isAssignableFrom(a.getClass())) {
             throw new ArrayStoreException("Passed array is of a type incompatible with the Set type");
         }
 
+        //"Resize" passed array if to small to store all els of this Set by reassigning its reference to a correctly sized array of the same type
         if (a.length < size) {
             a = (T[]) Array.newInstance(a.getClass().getComponentType(), size);
         }
 
         int i = 0;
 
+        //Fill the first positions in the array with all els of this Set
         for (E el : this) {
             a[i++] = (T) el;
         }
-        //I debated whether to use a while loop to fill the rest of the passed collection, but decided this was most readable
+        //if any positions remain in the array, fill them with 'null's. the previous index counter is maintained to finish the job
         for (int j = i; j < a.length; j++) {
             a[i++] = null;
         }
@@ -274,32 +281,53 @@ public class MyHashSet<E> implements Set<E> {
     @Override
     public boolean add(Object e) {
         boolean returnVal;
-        classCompatibilityCheck(e.getClass());
 
+        //check is this Set has become unbalanced and balances it if it has
         if (size > backingStore.length * LOAD_FACTOR)
             refactor();
 
-        int index = Math.abs(Objects.hashCode(e)) % backingStore.length;
+        int debugHashCode = Math.abs(Objects.hashCode(e));
 
-        if (backingStore[index] == null) {
+        //index of interior list to be amended
+        int index = debugHashCode % backingStore.length;
+
+        //If there is no array there, initialize one.
+        //This is the only way to initialize interior lists.
+        if (backingStore[index] == null)
             backingStore[index] = new ArrayList<>();
-        }
+        else if (contains(e))
+            return false;
 
-        List<E> reference = backingStore[index];
-        returnVal = reference.add((E) e);
+        List<E> listToAmend = backingStore[index];
+
+//        if (!listToAmend.getClass().getGenericSuperclass().getComponentType().isInstance(e)) {
+//            throw new ClassCastException("Cannot add object of type " + e.getClass().getName() + " to the list of type " + listToAmend.getClass().getName());
+//        }
+
+        //All that, to get to this. The actual add command.
+        returnVal = listToAmend.add((E) e);
+
         size++;
         mod_count++;
 
+        //checks for an overflow, and then trips the flag. This cannot be undone.
         if (size + 1 == Integer.MAX_VALUE && !overFlowFlag)
             overFlowFlag = true;
 
         return returnVal;
     }
 
+    //todo Javadoc
     private void refactor() {
-        Object[] holdingRay = toArray();
-        backingStore = new List[size * 2];
+        //This is a typical three-step reassignment. Storage, copy, clear.
 
+        //Best way I could think to make a stored copy of the data.
+        Object[] holdingRay = toArray();
+
+        //This out to dump the old struct, and mark it for garbage collection.
+        backingStore = new List[backingStore.length * 2];
+
+        //copy out of storage to new struct
         for (Object el : holdingRay) {
             add(el);
         }
@@ -361,11 +389,11 @@ public class MyHashSet<E> implements Set<E> {
         boolean returnVal = true;
 
         for (Object el : c) {
-
             classCompatibilityCheck(el.getClass());
-            returnVal = contains(el);
-            if (!returnVal)
+            if (!contains(el)) {
+                returnVal = false;
                 break;
+            }
         }
 
         return returnVal;
@@ -394,9 +422,10 @@ public class MyHashSet<E> implements Set<E> {
     @Override
     public boolean addAll(Collection<? extends E> c) {
         for (Object el : c) {
-
             classCompatibilityCheck(el.getClass());
-            add(el);
+
+            if(!contains(el))
+                add(el);
         }
 
         return true;
@@ -427,9 +456,7 @@ public class MyHashSet<E> implements Set<E> {
     public boolean retainAll(Collection<?> c) {
         int oldSize = size;
 
-
         for (Object el : c) {
-
             classCompatibilityCheck(el.getClass());
             remove(el);
         }
@@ -474,12 +501,14 @@ public class MyHashSet<E> implements Set<E> {
     @Override
     public void clear() {
         backingStore = new List[DEFAULT_INT_CAP];
+        size = 0;
         mod_count++;
     }
 
     private void classCompatibilityCheck(Class<?> o) {
-        if (!this.getClass().getComponentType().isAssignableFrom(o)) {
-            throw new ClassCastException("One or more of the elements passed as arguments is of a type incompatible with the Set type");
-        }
+        // TODO: fix
+//        if (!this.getClass().getComponentType().isAssignableFrom(o)) {
+//            throw new ClassCastException("One or more of the elements passed as arguments is of a type incompatible with the Set type");
+//        }
     }
 }
