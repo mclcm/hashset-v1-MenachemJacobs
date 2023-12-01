@@ -116,7 +116,7 @@ public class MyHashSet<E> implements Set<E> {
          * @return {@code true} if there are more elements, {@code false} otherwise.
          */
         public boolean hasNext() {
-            return outIndex < backingStore.length || inIndex < backingStore[backingStore.length - 1].size();
+            return outIndex < backingStore.length - 1 || inIndex < backingStore[backingStore.length - 1].size();
         }
 
         /**
