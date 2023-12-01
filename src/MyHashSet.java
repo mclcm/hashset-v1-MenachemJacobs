@@ -85,7 +85,9 @@ public class MyHashSet<E> implements Set<E> {
     public boolean contains(Object o) {
         classCompatibilityCheck(o.getClass());
 
-        return backingStore[Math.abs(Objects.hashCode(o)) % backingStore.length].contains(o);
+        int indexToCheck = Math.abs(Objects.hashCode(o)) % backingStore.length;
+
+        return backingStore[indexToCheck] != null && backingStore[indexToCheck].contains(o);
     }
 
     /**
@@ -134,13 +136,13 @@ public class MyHashSet<E> implements Set<E> {
             }
 
             //If the current position is at the bottom of the current outer-index, set innerIndex to zero and iterate outerIndex
-            if(inIndex >= backingStore[outIndex].size() || backingStore[outIndex] == null){
+            if (inIndex >= backingStore[outIndex].size() || backingStore[outIndex] == null) {
                 inIndex = 0;
                 outIndex++;
             }
 
             //If there is no list at the index in backingStore, iterate the pointer
-            while(backingStore[outIndex] == null){
+            while (backingStore[outIndex] == null) {
                 outIndex++;
             }
 
@@ -172,7 +174,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public Object[] toArray() {
-        Object[] outRay = (E[])new Object[size];
+        Object[] outRay = new Object[size];
         int counter = 0;
 
         for (E el : this) {
@@ -281,39 +283,42 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean add(Object e) {
-        boolean returnVal;
+        classCompatibilityCheck(e.getClass());
+
+        boolean returnVal = false;
 
         //check is this Set has become unbalanced and balances it if it has
         if (size > backingStore.length * LOAD_FACTOR)
             refactor();
 
-        int debugHashCode = Math.abs(Objects.hashCode(e));
+        //The actual add logic only get run if the Set doesn't already contain the el
+        if (!contains(e)) {
+            returnVal = addNotDuple(e);
+        }
 
+        return returnVal;
+    }
+
+    private boolean addNotDuple(Object e) {
         //index of interior list to be amended
-        int index = debugHashCode % backingStore.length;
+        int index = Math.abs(Objects.hashCode(e)) % backingStore.length;
 
         //If there is no array there, initialize one.
-        //This is the only way to initialize interior lists.
         if (backingStore[index] == null)
+            //This is the only way to initialize interior lists.
             backingStore[index] = new ArrayList<>();
-        else if (contains(e))
-            return false;
 
         List<E> listToAmend = backingStore[index];
-
-//        if (!listToAmend.getClass().getGenericSuperclass().getComponentType().isInstance(e)) {
-//            throw new ClassCastException("Cannot add object of type " + e.getClass().getName() + " to the list of type " + listToAmend.getClass().getName());
-//        }
-
-        //All that, to get to this. The actual add command.
-        returnVal = listToAmend.add((E) e);
-
-        size++;
-        mod_count++;
 
         //checks for an overflow, and then trips the flag. This cannot be undone.
         if (size + 1 == Integer.MAX_VALUE && !overFlowFlag)
             overFlowFlag = true;
+
+        //All that, to get to this. The actual add command.
+        boolean returnVal = listToAmend.add((E) e);
+
+        size++;
+        mod_count++;
 
         return returnVal;
     }
@@ -427,7 +432,7 @@ public class MyHashSet<E> implements Set<E> {
         for (Object el : c) {
             classCompatibilityCheck(el.getClass());
 
-            if(!contains(el))
+            if (!contains(el))
                 add(el);
         }
 
