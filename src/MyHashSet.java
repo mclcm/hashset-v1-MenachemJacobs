@@ -63,7 +63,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean isEmpty() {
-        return size == 0;
+        return size() == 0;
     }
 
     /**
@@ -107,10 +107,25 @@ public class MyHashSet<E> implements Set<E> {
      * elements in the Set.
      */
     private class MyIterator implements Iterator<E> {
+        LinkedList<Integer> ss = new LinkedList<Integer>();
+
         int outIndex = 0;
-        int inIndex = 0;
+        int inIndex = 1;
+        boolean existsSubsequent = !isEmpty();
         Object returnVal;
+        Object subsequent;
         int originalModCount = mod_count;
+
+        private MyIterator() {
+            if (existsSubsequent) {
+                //If there is no list at the index in backingStore, iterate the pointer
+                while (outIndex < backingStore.length && backingStore[outIndex] == null) {
+                    outIndex++;
+                }
+
+                subsequent = backingStore[outIndex].get(0);
+            }
+        }
 
         /**
          * Returns true if there are more elements to iterate over.
@@ -118,8 +133,7 @@ public class MyHashSet<E> implements Set<E> {
          * @return {@code true} if there are more elements, {@code false} otherwise.
          */
         public boolean hasNext() {
-            //I don't know why off by one is an issue on the outside but not the in. I suspect it's because inIndex is incremented on assignment.
-            return outIndex < backingStore.length - 1 || inIndex < backingStore[backingStore.length - 1].size();
+            return existsSubsequent;
         }
 
         /**
@@ -131,6 +145,7 @@ public class MyHashSet<E> implements Set<E> {
          *                                         while iterating.
          */
         public E next() {
+
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
@@ -142,11 +157,17 @@ public class MyHashSet<E> implements Set<E> {
             }
 
             //If there is no list at the index in backingStore, iterate the pointer
-            while (backingStore[outIndex] == null) {
+            while (outIndex < backingStore.length && backingStore[outIndex] == null) {
                 outIndex++;
             }
 
-            returnVal = backingStore[outIndex].get(inIndex++);
+            if (outIndex >= backingStore.length)
+                existsSubsequent = false;
+
+            //prep subsequent with iterator initialization
+            returnVal = subsequent;
+            if (existsSubsequent)
+                subsequent = backingStore[outIndex].get(inIndex++);
 
             //check for concurrent mod
             if (originalModCount != mod_count)
@@ -174,7 +195,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public Object[] toArray() {
-        Object[] outRay = new Object[size];
+        Object[] outRay = new Object[size()];
         int counter = 0;
 
         for (E el : this) {
@@ -233,8 +254,8 @@ public class MyHashSet<E> implements Set<E> {
         }
 
         //"Resize" passed array if to small to store all els of this Set by reassigning its reference to a correctly sized array of the same type
-        if (a.length < size) {
-            a = (T[]) Array.newInstance(a.getClass().getComponentType(), size);
+        if (a.length < size()) {
+            a = (T[]) Array.newInstance(a.getClass().getComponentType(), size());
         }
 
         int i = 0;
@@ -288,7 +309,7 @@ public class MyHashSet<E> implements Set<E> {
         boolean returnVal = false;
 
         //check is this Set has become unbalanced and balances it if it has
-        if (size > backingStore.length * LOAD_FACTOR)
+        if (size() > backingStore.length * LOAD_FACTOR)
             refactor();
 
         //The actual add logic only get run if the Set doesn't already contain the el
@@ -317,9 +338,10 @@ public class MyHashSet<E> implements Set<E> {
      * @return {@code true} if the set did not already contain the specified
      * element and the addition is successful; {@code false} otherwise
      * @throws ClassCastException if the class of the specified element
-     * prevents it from being added to the set
+     *                            prevents it from being added to the set
      */
     private boolean addNotDuple(Object e) {
+        //todo add null handler
         //index of interior list to be amended
         int index = Math.abs(Objects.hashCode(e)) % backingStore.length;
 
@@ -406,7 +428,14 @@ public class MyHashSet<E> implements Set<E> {
     public boolean remove(Object o) {
         classCompatibilityCheck(o.getClass());
 
-        boolean returnVal = backingStore[Math.abs(o.hashCode()) % backingStore.length].remove(o);
+        int indexForRemoval = Math.abs(o.hashCode()) % backingStore.length;
+
+        boolean returnVal = backingStore[indexForRemoval].remove(o);
+
+        //This helps my iterator method
+        if (backingStore[indexForRemoval].isEmpty())
+            backingStore[indexForRemoval] = null;
+
         size--;
         mod_count++;
 
