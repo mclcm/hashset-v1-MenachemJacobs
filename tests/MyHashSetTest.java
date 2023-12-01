@@ -1,6 +1,8 @@
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -66,7 +68,29 @@ class MyHashSetTest {
         assertTrue(mySet.contains("30"));
     }
 
-    // iterator hasNext next toArray toArray add remove containsAll addAll retainAll clear
+    @Test
+    void iterator_Normal(){
+        prep();
+        ArrayList<String> testable = new ArrayList<>();
+        int counter = 0;
+
+        Iterator<String> sitter = mySet.iterator();
+
+        for (String word : mySet) {
+            testable.add(word);
+        }
+        while(sitter.hasNext()){
+            testable.add(sitter.next());
+        }
+
+        for (String word : mySet) {
+            assertTrue(testable.contains(word));
+        }
+
+        assertEquals(mySet.size(), testable.size());
+    }
+
+    // hasNext next toArray toArray add remove containsAll addAll retainAll clear
 
     void prep(){
         mySet.add("Poe");
