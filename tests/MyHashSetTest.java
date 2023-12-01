@@ -57,13 +57,7 @@ class MyHashSetTest {
 
     @Test
     void contains_Edge_Refactor(){
-        String valToAdd;
-
-        //knowing something about the internal structure of the array made me wonder if this would work
-        for (int i = 0; i < 32; i++) {
-            valToAdd = ((Integer)i).toString();
-            mySet.add(valToAdd);
-        }
+        bigPrep();
 
         assertTrue(mySet.contains("30"));
     }
@@ -72,22 +66,32 @@ class MyHashSetTest {
     void iterator_Normal(){
         prep();
         ArrayList<String> testable = new ArrayList<>();
-        int counter = 0;
 
         Iterator<String> sitter = mySet.iterator();
 
-        for (String word : mySet) {
-            testable.add(word);
-        }
         while(sitter.hasNext()){
             testable.add(sitter.next());
         }
 
+        //check that the correct number of elements were copied out
+        assertEquals(mySet.size(), testable.size());
+
+        //check that each element in the Set appears in the copy out
         for (String word : mySet) {
             assertTrue(testable.contains(word));
         }
+    }
 
-        assertEquals(mySet.size(), testable.size());
+    @Test
+    void iterator_Edge_loadFactorHuge(){
+        mySet = new MyHashSet<>(16, 100);
+        bigPrep();
+
+        ArrayList<String> testable = new ArrayList<>(mySet);
+
+        for (String word : mySet) {
+            assertTrue(testable.contains(word));
+        }
     }
 
     // hasNext next toArray toArray add remove containsAll addAll retainAll clear
@@ -96,5 +100,14 @@ class MyHashSetTest {
         mySet.add("Poe");
         mySet.add("E.");
         mySet.add("Near a raven");
+    }
+
+    void bigPrep(){
+        String valToAdd;
+
+        for (int i = 0; i < 32; i++) {
+            valToAdd = ((Integer)i).toString();
+            mySet.add(valToAdd);
+        }
     }
 }
