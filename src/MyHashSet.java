@@ -299,6 +299,26 @@ public class MyHashSet<E> implements Set<E> {
         return returnVal;
     }
 
+    /**
+     * Adds the specified element to the set if it is not already present,
+     * ensuring that duplicate elements are not allowed. This method is
+     * an internal helper method used by the {@code add} operation.
+     *
+     * <p>The element is added to the set only if no element {@code e2}
+     * such that {@code Objects.equals(e, e2)} is already present. If the
+     * set already contains the element, the call leaves the set unchanged
+     * and returns {@code false}.
+     *
+     * <p>The method handles the initialization of interior lists, checks for
+     * potential overflow, and updates the size and modification count of
+     * the set accordingly.
+     *
+     * @param e the element to be added to the set
+     * @return {@code true} if the set did not already contain the specified
+     * element and the addition is successful; {@code false} otherwise
+     * @throws ClassCastException if the class of the specified element
+     * prevents it from being added to the set
+     */
     private boolean addNotDuple(Object e) {
         //index of interior list to be amended
         int index = Math.abs(Objects.hashCode(e)) % backingStore.length;
@@ -323,7 +343,27 @@ public class MyHashSet<E> implements Set<E> {
         return returnVal;
     }
 
-    //todo Javadoc
+    /**
+     * Resizes the backing store of the set, doubling its capacity. This method
+     * is invoked when the size of the set exceeds a certain threshold.
+     * The resizing involves creating a new backing store with double the
+     * capacity, copying elements from the current set to the new store,
+     * and updating the set's internal state accordingly.
+     * <p>
+     * This method ensures that the set remains balanced and provides
+     * sufficient capacity to accommodate additional elements without
+     * frequent resizing.
+     * </p>
+     * <p>
+     * Note: The implementation uses a three-step process involving
+     * storing elements in an array, reassigning the backing store
+     * reference, and copying elements back to the new backing store.
+     * </p>
+     * <p>
+     * This method is private and called internally by the {@code add} operation
+     * when the size of the set exceeds a predefined threshold.
+     * </p>
+     */
     private void refactor() {
         //This is a typical three-step reassignment. Storage, copy, clear.
 
