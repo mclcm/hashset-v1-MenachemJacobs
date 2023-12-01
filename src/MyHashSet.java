@@ -116,6 +116,7 @@ public class MyHashSet<E> implements Set<E> {
          * @return {@code true} if there are more elements, {@code false} otherwise.
          */
         public boolean hasNext() {
+            //I don't know why off by one is an issue on the outside but not the in. I suspect it's because inIndex is incremented on assignment.
             return outIndex < backingStore.length - 1 || inIndex < backingStore[backingStore.length - 1].size();
         }
 
@@ -324,10 +325,12 @@ public class MyHashSet<E> implements Set<E> {
         //Best way I could think to make a stored copy of the data.
         Object[] holdingRay = toArray();
 
-        //This out to dump the old struct, and mark it for garbage collection.
+        //Reassigns the reference for the outer list in order to dump the old struct, and mark it for garbage collection.
         backingStore = new List[backingStore.length * 2];
 
         //copy out of storage to new struct
+        //it is necessary that a refactor not double count length. Is that a mod?
+        size = 0;
         for (Object el : holdingRay) {
             add(el);
         }
