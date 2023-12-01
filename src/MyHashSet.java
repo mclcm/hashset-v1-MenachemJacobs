@@ -83,9 +83,15 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean contains(Object o) {
-        classCompatibilityCheck(o.getClass());
+        if (o != null)
+            classCompatibilityCheck(o.getClass());
 
-        int indexToCheck = Math.abs(Objects.hashCode(o)) % backingStore.length;
+        int indexToCheck;
+
+        if (o == null)
+            indexToCheck = 0;
+        else
+            indexToCheck = Math.abs(Objects.hashCode(o)) % backingStore.length;
 
         return backingStore[indexToCheck] != null && backingStore[indexToCheck].contains(o);
     }
@@ -303,7 +309,8 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean add(Object e) {
-        classCompatibilityCheck(e.getClass());
+        if (e != null)
+            classCompatibilityCheck(e.getClass());
 
         boolean returnVal = false;
 
@@ -340,16 +347,20 @@ public class MyHashSet<E> implements Set<E> {
      *                            prevents it from being added to the set
      */
     private boolean addNotDuple(Object e) {
-        //todo add null handler
         //index of interior list to be amended
-        int index = Math.abs(Objects.hashCode(e)) % backingStore.length;
+        int indexToAddTo;
+
+        if (e == null)
+            indexToAddTo = 0;
+        else
+            indexToAddTo = Math.abs(Objects.hashCode(e)) % backingStore.length;
 
         //If there is no array there, initialize one.
-        if (backingStore[index] == null)
+        if (backingStore[indexToAddTo] == null)
             //This is the only way to initialize interior lists.
-            backingStore[index] = new ArrayList<>();
+            backingStore[indexToAddTo] = new ArrayList<>();
 
-        List<E> listToAmend = backingStore[index];
+        List<E> listToAmend = backingStore[indexToAddTo];
 
         //checks for an overflow, and then trips the flag. This cannot be undone.
         if (size + 1 == Integer.MAX_VALUE && !overFlowFlag)
