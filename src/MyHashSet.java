@@ -136,7 +136,7 @@ public class MyHashSet<E> implements Set<E> {
             }
 
             //If the current position is at the bottom of the current outer-index, set innerIndex to zero and iterate outerIndex
-            if (inIndex >= backingStore[outIndex].size() || backingStore[outIndex] == null) {
+            if (backingStore[outIndex] == null || inIndex >= backingStore[outIndex].size()) {
                 inIndex = 0;
                 outIndex++;
             }
