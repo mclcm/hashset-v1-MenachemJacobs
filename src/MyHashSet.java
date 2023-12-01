@@ -145,6 +145,9 @@ public class MyHashSet<E> implements Set<E> {
          *                                         while iterating.
          */
         public E next() {
+            //check for concurrent mod
+            if (originalModCount != mod_count)
+                throw new ConcurrentModificationException("The Iterator has detected a modification to the Set. This is not allowed.");
 
             if (!hasNext()) {
                 throw new NoSuchElementException();
@@ -168,10 +171,6 @@ public class MyHashSet<E> implements Set<E> {
             returnVal = subsequent;
             if (existsSubsequent)
                 subsequent = backingStore[outIndex].get(inIndex++);
-
-            //check for concurrent mod
-            if (originalModCount != mod_count)
-                throw new ConcurrentModificationException("The Iterator has detected a modification to the Set. This is not allowed.");
 
             return (E) returnVal;
         }
