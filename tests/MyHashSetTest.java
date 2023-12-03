@@ -290,6 +290,12 @@ class MyHashSetTest {
 
     @Test
     void containsAll_Normal() {
+        prep();
+        Set<String> testable = new HashSet<>(mySet);
+
+        assertTrue(mySet.containsAll(testable), "containsAll() is returning false for cloned sets");
+        testable.add("Midnights so dreary, tired and weary");
+        assertFalse(mySet.containsAll(testable), "containsAll() is returning true for distinguished sets");
     }
 
     //addAll retainAll clear

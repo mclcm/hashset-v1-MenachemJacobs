@@ -129,7 +129,7 @@ public class MyHashSet<E> implements Set<E> {
                 while (outIndex < backingStore.length && backingStore[outIndex] == null) {
                     outIndex++;
                 }
-
+                //The first position in every existing list always contains its first element
                 subsequent = backingStore[outIndex].get(0);
             }
         }
@@ -160,7 +160,7 @@ public class MyHashSet<E> implements Set<E> {
                 throw new NoSuchElementException();
             }
 
-            //If the current position is at the bottom of the current outer-index, set innerIndex to zero and iterate outerIndex
+            //If the current cursor position is at the bottom of the current outer-index, set innerIndex to zero and iterate outerIndex
             if (backingStore[outIndex] == null || inIndex >= backingStore[outIndex].size()) {
                 inIndex = 0;
                 outIndex++;
@@ -171,10 +171,11 @@ public class MyHashSet<E> implements Set<E> {
                 outIndex++;
             }
 
+            //If the previous search carried the cursor beyond the end of the Set, there are no more elements.
             if (outIndex >= backingStore.length)
                 existsSubsequent = false;
 
-            //prep subsequent with iterator initialization
+            //existing subsequent is loaded into the returnVal, and then the position is filled with the results of the search if any
             returnVal = subsequent;
             if (existsSubsequent)
                 subsequent = backingStore[outIndex].get(inIndex++);
@@ -358,8 +359,8 @@ public class MyHashSet<E> implements Set<E> {
 
         List<E> listToAmend = backingStore[indexToAddTo];
 
-        //checks for an overflow, and then trips the flag. This cannot be undone.
-        if (size + 1 == Integer.MAX_VALUE && !overFlowFlag)
+        //checks for an overflow, and then trips the flag. This cannot be undone except by refactor of clear().
+        if (!overFlowFlag && size + 1 == Integer.MAX_VALUE)
             overFlowFlag = true;
 
         //All that, to get to this. The actual add command.
@@ -385,7 +386,7 @@ public class MyHashSet<E> implements Set<E> {
      * <p>
      * Note: The implementation uses a three-step process involving
      * storing elements in an array, reassigning the backing store
-     * reference, and copying elements back to the new backing store.
+     * reference, and copying elements to the new backing store.
      * </p>
      * <p>
      * This method is private and called internally by the {@code add} operation
@@ -393,8 +394,6 @@ public class MyHashSet<E> implements Set<E> {
      * </p>
      */
     private void refactor() {
-        //This is a typical three-step reassignment. Storage, copy, clear.
-
         //Best way I could think to make a stored copy of the data.
         Object[] holdingRay = toArray();
 
@@ -404,6 +403,8 @@ public class MyHashSet<E> implements Set<E> {
         //copy out of storage to new struct
         //it is necessary that a refactor not double count length. Is that a mod?
         size = 0;
+        overFlowFlag = false;
+
         for (Object el : holdingRay) {
             add(el);
         }
@@ -436,15 +437,15 @@ public class MyHashSet<E> implements Set<E> {
 
         int indexForRemoval = Math.abs(o.hashCode()) % backingStore.length;
 
-        //return is false if there is no list at the given index, otherwise it is equal to the return of the local remove method
+        //return is false if there is no list at the given index, otherwise return is equal to the return of the local remove method
         boolean returnVal = backingStore[indexForRemoval] != null && backingStore[indexForRemoval].remove(o);
 
-        //This helps my iterator method. If something was removed, check if its list is now empty, and if so clear it
+        //If something was removed, check if its list is now empty, and if so clear it. Dropping empty lists helps my iterator method.
         if (returnVal && backingStore[indexForRemoval].isEmpty())
             backingStore[indexForRemoval] = null;
 
-        //if something is actually removed, update the stats
-        if(returnVal) {
+        //if something was actually removed, update the stats
+        if (returnVal) {
             size--;
             mod_count++;
         }
@@ -475,6 +476,7 @@ public class MyHashSet<E> implements Set<E> {
     public boolean containsAll(Collection<?> c) {
         boolean returnVal = true;
 
+        //If a single value from the passed collection is not found in the Set, the return is set to false, and the loop stops looking.
         for (Object el : c) {
             classCompatibilityCheck(el.getClass());
             if (!contains(el)) {
@@ -589,6 +591,7 @@ public class MyHashSet<E> implements Set<E> {
     public void clear() {
         backingStore = new List[DEFAULT_INT_CAP];
         size = 0;
+        overFlowFlag = false;
         mod_count++;
     }
 
