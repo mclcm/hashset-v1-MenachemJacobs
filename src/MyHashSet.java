@@ -589,7 +589,13 @@ public class MyHashSet<E> implements Set<E> {
 
     private void classCompatibilityCheck(Class<?> o) {
         // TODO: fix
-//        if (!this.getClass().getComponentType().isAssignableFrom(o)) {
+//        E example;
+//        for (E el: this) {
+//            example = el;
+//        }
+//
+//        //if (!a.getClass().getComponentType().isAssignableFrom(el.getClass())) {
+//        if (o.getComponentType().isAssignableFrom(example.getClass())) {
 //            throw new ClassCastException("One or more of the elements passed as arguments is of a type incompatible with the Set type");
 //        }
     }

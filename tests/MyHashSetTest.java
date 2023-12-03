@@ -32,7 +32,7 @@ class MyHashSetTest {
         prep();
 
         assertTrue(mySet.remove("Poe"));
-        assertEquals(2, mySet.size(), "size() fails in to account for diminution");
+        assertEquals(2, mySet.size(), "size() fails to account for diminution");
     }
 
     @Test
@@ -84,10 +84,11 @@ class MyHashSetTest {
         //check that the correct number of elements were copied out
         assertEquals(mySet.size(), testable.size(), "There is some issue with the number of elements the iterator is finding in the set");
 
-        //check that each element in the Set appears in the copy out
-        for (String word : mySet) {
-            assertTrue(testable.contains(word), "The elements being returned by the iterator are not matching the elements in the Set");
-        }
+        String errorOne = "The elements being returned by the iterator are not matching the elements in the Set";
+        String errorTwo = "Not all elements in the Set are being returned by the iterator";
+
+        //check that each element in the Set appears in the copy out and that the elements in the copy out all appear in the Set
+        eachContainsEach(mySet, testable.toArray(), errorOne, errorTwo);
     }
 
     @Test
@@ -100,9 +101,10 @@ class MyHashSetTest {
         //check that the correct number of elements were copied out
         assertEquals(mySet.size(), testable.size(), "There is some issue with the number of elements the iterator is finding in the Set when rebalance is prohibited");
 
-        for (String word : mySet) {
-            assertTrue(testable.contains(word), "The elements being returned by the iterator are not matching the elements in the Set when rebalance is prohibited");
-        }
+        String errorOne = "The elements being returned by the iterator are not matching the elements in the Set when rebalance is prohibited";
+        String errorTwo = "Not all elements in the Set are being returned by the iterator when rebalance is prohibited";
+
+        eachContainsEach(mySet, testable.toArray(), errorOne, errorTwo);
     }
 
     @Test
@@ -158,20 +160,77 @@ class MyHashSetTest {
         Object[] outray = mySet.toArray();
 
         for (Object word : outray) {
-            assertTrue(testable.contains(word), "Elements have been improperly add to the Set");
+            assertTrue(testable.contains(word), "Elements have been improperly added to the Set");
         }
 
-        assertEquals(testable.size(), outray.length, "The wrong number of elements has been added to the set");
+        assertEquals(testable.size(), outray.length, "The wrong number of elements have been added to the set");
     }
 
     @Test
     void toArray_Edge_MultiTyping() {
-        MyHashSet<Object> testingSet = new MyHashSet<Object>();
+        MyHashSet<Object> multitypedSet = new MyHashSet<>();
 
-        testingSet.add("Hello");
+        multitypedSet.add("Hello");
+        multitypedSet.add(7);
+        multitypedSet.add(true);
+
+        Object[] testable = multitypedSet.toArray();
+        int counter = 0;
+
+        for (Object el : testable) {
+            assertTrue(multitypedSet.contains(el), "Multityping the Set is messing with the elements returned by the toArray() method");
+        }
+
+        for (Object el : multitypedSet) {
+            assertEquals(testable[counter++], el, "Multityping the Set is breaking the order of return for the toArray() method");
+        }
     }
 
-    //toArray add(null)(not duple null) remove containsAll addAll retainAll clear
+    @Test
+    void toArray_typedReturn_Normal() {
+        bigPrep();
+
+        String[] testable = mySet.toArray(new String[40]);
+        int counter = 0;
+
+        for (String word : testable) {
+            if (counter++ < mySet.size())
+                assertTrue(mySet.contains(word), "Elements in toArray(T[] a) are not found in the Set");
+            else
+                assertNull(word, "toArray(T[] a) is not end filling with null values");
+        }
+
+        counter = 0;
+
+        for (String word : mySet) {
+            while (!testable[counter].equals(word) && counter < mySet.size()) {
+                counter++;
+            }
+            assertTrue(counter < mySet.size(), "Elements from mySet are not to be found in the return from toArray(T[] a)");
+        }
+    }
+
+    @Test
+    void toArray_typedReturn_Edge_passedArrayToShort() {
+        bigPrep();
+        String[] testable = mySet.toArray(new String[25]);
+
+        assertEquals(mySet.size(), testable.length, "toArray(T[] a) isn't resizing past arrays properly");
+
+        int counter = 0;
+
+        String errorOne = "Element not present in the Set are being returned by the toArray(T[] a) if the passed array has been resized";
+        String errorTwo = "Elements from the Set aren't being found in the return from toArray(T[] a) if if the passed array has been resized";
+
+        eachContainsEach(mySet, testable, errorOne, errorTwo);
+    }
+
+    @Test
+    void toArray_typedReturn_Edge_passedArrayTypedWrong() {
+
+    }
+
+    // add(null)(not duple null) remove containsAll addAll retainAll clear
 
     //assertThrows(ConcurrentModificationException.class, () -> {
     //            prep();
@@ -192,6 +251,21 @@ class MyHashSetTest {
         for (int i = 0; i < 32; i++) {
             valToAdd = ((Integer) i).toString();
             mySet.add(valToAdd);
+        }
+    }
+
+    void eachContainsEach(Set<String> m, Object[] n, String setDoesNotContain, String arrayDoesNotContain) {
+        int counter = 0;
+
+        for (Object word : n) {
+            assertTrue(m.contains(word), setDoesNotContain);
+        }
+
+        for (String word : m) {
+            while (!n[counter].equals(word) && counter < m.size()) {
+                counter++;
+            }
+            assertTrue(counter < m.size(), arrayDoesNotContain);
         }
     }
 }
