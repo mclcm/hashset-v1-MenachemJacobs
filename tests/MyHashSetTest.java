@@ -226,8 +226,11 @@ class MyHashSetTest {
     }
 
     @Test
-    void toArray_typedReturn_Edge_passedArrayTypedWrong() {
-
+    void toArray_typedReturn_Edge_incompatiblePassedArrayType() {
+        prep();
+        assertThrows(ArrayStoreException.class, () -> {
+            mySet.toArray(new Boolean[3]);
+        }, "toArray(T[] a) isn't throwing an error when passed an array of incompatible type");
     }
 
     // add(null)(not duple null) remove containsAll addAll retainAll clear
