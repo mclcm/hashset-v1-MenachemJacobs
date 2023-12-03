@@ -253,11 +253,6 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public <T> T[] toArray(T[] a) {
-        //my one implementation of my ArrayStoreException code as I wrote it originally
-        if (!this.getClass().getComponentType().isAssignableFrom(a.getClass())) {
-            throw new ArrayStoreException("Passed array is of a type incompatible with the Set type");
-        }
-
         //"Resize" passed array if to small to store all els of this Set by reassigning its reference to a correctly sized array of the same type
         if (a.length < size()) {
             a = (T[]) Array.newInstance(a.getClass().getComponentType(), size());
@@ -265,8 +260,10 @@ public class MyHashSet<E> implements Set<E> {
 
         int i = 0;
 
-        //Fill the first positions in the array with all els of this Set
         for (E el : this) {
+            if (!a.getClass().getComponentType().isAssignableFrom(el.getClass())) {
+                throw new ArrayStoreException("Incompatible array type for the elements in the list.");
+            }
             a[i++] = (T) el;
         }
         //if any positions remain in the array, fill them with 'null's. the previous index counter is maintained to finish the job
@@ -343,8 +340,6 @@ public class MyHashSet<E> implements Set<E> {
      * @param e the element to be added to the set
      * @return {@code true} if the set did not already contain the specified
      * element and the addition is successful; {@code false} otherwise
-     * @throws ClassCastException if the class of the specified element
-     *                            prevents it from being added to the set
      */
     private boolean addNotDuple(Object e) {
         //index of interior list to be amended
