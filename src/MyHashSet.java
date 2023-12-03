@@ -83,8 +83,9 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean contains(Object o) {
-        if (o != null)
+        if (o != null) {
             classCompatibilityCheck(o.getClass());
+        }
 
         int indexToCheck;
 
@@ -315,7 +316,7 @@ public class MyHashSet<E> implements Set<E> {
         if (size() > backingStore.length * LOAD_FACTOR)
             refactor();
 
-        //The actual add logic only get run if the Set doesn't already contain the el
+        //The actual add logic only gets run if the Set doesn't already contain the passed el
         if (!contains(e)) {
             returnVal = addNotDuple(e);
         }
@@ -435,14 +436,18 @@ public class MyHashSet<E> implements Set<E> {
 
         int indexForRemoval = Math.abs(o.hashCode()) % backingStore.length;
 
-        boolean returnVal = backingStore[indexForRemoval].remove(o);
+        //return is false if there is no list at the given index, otherwise it is equal to the return of the local remove method
+        boolean returnVal = backingStore[indexForRemoval] != null && backingStore[indexForRemoval].remove(o);
 
-        //This helps my iterator method
-        if (backingStore[indexForRemoval].isEmpty())
+        //This helps my iterator method. If something was removed, check if its list is now empty, and if so clear it
+        if (returnVal && backingStore[indexForRemoval].isEmpty())
             backingStore[indexForRemoval] = null;
 
-        size--;
-        mod_count++;
+        //if something is actually removed, update the stats
+        if(returnVal) {
+            size--;
+            mod_count++;
+        }
 
         return returnVal;
     }
@@ -589,14 +594,11 @@ public class MyHashSet<E> implements Set<E> {
 
     private void classCompatibilityCheck(Class<?> o) {
         // TODO: fix
-//        E example;
-//        for (E el: this) {
-//            example = el;
-//        }
-//
-//        //if (!a.getClass().getComponentType().isAssignableFrom(el.getClass())) {
-//        if (o.getComponentType().isAssignableFrom(example.getClass())) {
-//            throw new ClassCastException("One or more of the elements passed as arguments is of a type incompatible with the Set type");
+//        for (E el : this) {
+//            if (!o.getComponentType().isAssignableFrom(el.getClass())) {
+//                throw new ClassCastException("Incompatible array type for the elements in the list.");
+//            }
+//            break;
 //        }
     }
 }

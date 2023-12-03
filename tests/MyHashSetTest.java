@@ -168,20 +168,20 @@ class MyHashSetTest {
 
     @Test
     void toArray_Edge_MultiTyping() {
-        MyHashSet<Object> multitypedSet = new MyHashSet<>();
+        MyHashSet<Object> multiTypedSet = new MyHashSet<>();
 
-        multitypedSet.add("Hello");
-        multitypedSet.add(7);
-        multitypedSet.add(true);
+        multiTypedSet.add("Hello");
+        multiTypedSet.add(7);
+        multiTypedSet.add(true);
 
-        Object[] testable = multitypedSet.toArray();
+        Object[] testable = multiTypedSet.toArray();
         int counter = 0;
 
         for (Object el : testable) {
-            assertTrue(multitypedSet.contains(el), "Multityping the Set is messing with the elements returned by the toArray() method");
+            assertTrue(multiTypedSet.contains(el), "Multityping the Set is messing with the elements returned by the toArray() method");
         }
 
-        for (Object el : multitypedSet) {
+        for (Object el : multiTypedSet) {
             assertEquals(testable[counter++], el, "Multityping the Set is breaking the order of return for the toArray() method");
         }
     }
@@ -206,7 +206,7 @@ class MyHashSetTest {
             while (!testable[counter].equals(word) && counter < mySet.size()) {
                 counter++;
             }
-            assertTrue(counter < mySet.size(), "Elements from mySet are not to be found in the return from toArray(T[] a)");
+            assertTrue(counter < mySet.size(), "Elements from mySet are nowhere to be found in the return from toArray(T[] a)");
         }
     }
 
@@ -233,7 +233,66 @@ class MyHashSetTest {
         }, "toArray(T[] a) isn't throwing an error when passed an array of incompatible type");
     }
 
-    // add(null)(not duple null) remove containsAll addAll retainAll clear
+    @Test
+    void add_Normal() {
+        prep();
+        String wordToAdd = "Midnights so dreary, tired and weary";
+
+        assertFalse(mySet.contains(wordToAdd));
+        assertTrue(mySet.add(wordToAdd), "Element not already in the Set is being rejected by the add() method");
+        assertTrue(mySet.contains(wordToAdd), "Element added to the Set is not being found within it");
+    }
+
+    @Test
+    void add_Edge_addNull() {
+        prep();
+
+        assertFalse(mySet.contains(null));
+        assertTrue(mySet.add(null), "null value is being rejected by the add()");
+        assertTrue(mySet.contains(null), "null value added to the Set is not being found within it");
+    }
+
+    @Test
+    void add_Edge_Duplication() {
+        prep();
+
+        assertFalse(mySet.contains(null));
+        assertTrue(mySet.add(null), "null value is being rejected by the add()");
+
+        int oldSize = mySet.size();
+
+        assertFalse(mySet.add(null), "null value is not being rejected by the added despite being a duplicate");
+
+        assertEquals(oldSize, mySet.size());
+    }
+
+    @Test
+    void remove_Normal() {
+        prep();
+        int counter = mySet.size();
+
+        for (Object word : mySet.toArray()) {
+            assertTrue(mySet.remove(word), "An element in the Set cannot be found in order to remove() it");
+            assertEquals(--counter, mySet.size(), "Size is not decreasing as expected after a remove()");
+        }
+
+        assertTrue(mySet.isEmpty(), "Set is not empty despite remove()ing everything");
+    }
+
+    @Test
+    void remove_Edge_removeNonExistent() {
+        prep();
+        int oldSize = mySet.size();
+
+        assertFalse(mySet.remove("Midnights so dreary, tired and weary"));
+        assertEquals(oldSize, mySet.size());
+    }
+
+    @Test
+    void containsAll_Normal() {
+    }
+
+    //addAll retainAll clear
 
     //assertThrows(ConcurrentModificationException.class, () -> {
     //            prep();
