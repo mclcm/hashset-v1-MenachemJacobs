@@ -72,7 +72,7 @@ class MyHashSetTest {
 
     @Test
     void contains_Edge_Refactor() {
-        bigPrep(32);
+        bigPrep();
 
         assertTrue(mySet.contains("30"));
     }
@@ -111,7 +111,7 @@ class MyHashSetTest {
     @Test
     void iterator_Edge_loadFactorHuge() {
         mySet = new MyHashSet<>(16, 100);
-        bigPrep(32);
+        bigPrep();
 
         ArrayList<String> testable = new ArrayList<>(mySet);
 
@@ -205,11 +205,12 @@ class MyHashSetTest {
 
     @Test
     void toArray_typedReturn_Normal() {
-        bigPrep(32);
+        bigPrep();
 
         String[] testable = mySet.toArray(new String[40]);
         int counter = 0;
 
+        //Test that all elements from 'testable' either came from 'mySet' or are null values in the final positions
         for (String word : testable) {
             if (counter++ < mySet.size())
                 assertTrue(mySet.contains(word), "Elements in toArray(T[] a) are not found in the Set");
@@ -219,6 +220,7 @@ class MyHashSetTest {
 
         counter = 0;
 
+        //Test that all elements from 'mySet' have been added to 'testable'
         for (String word : mySet) {
             while (!testable[counter].equals(word) && counter < mySet.size()) {
                 counter++;
@@ -229,9 +231,10 @@ class MyHashSetTest {
 
     @Test
     void toArray_typedReturn_Edge_passedArrayToShort() {
-        bigPrep(32);
+        bigPrep();
         String[] testable = mySet.toArray(new String[25]);
 
+        //test that the passed array has been resized to fit all elements in 'mySet'
         assertEquals(mySet.size(), testable.length, "toArray(T[] a) isn't resizing past arrays properly");
 
         String errorOne = "Element not present in the Set are being returned by the toArray(T[] a) if the passed array has been resized";
@@ -302,6 +305,16 @@ class MyHashSetTest {
     }
 
     @Test
+    void remove_Edge_removeNull() {
+        prep();
+
+        assertFalse(mySet.contains(null));
+        mySet.add(null);
+        assertTrue(mySet.remove(null), "remove() has failed to remove null value");
+        assertFalse(mySet.contains(null), "null value remove()ed from the Set is still being found by contains()");
+    }
+
+    @Test
     void containsAll_Normal() {
         prep();
         Set<String> testable = new HashSet<>(mySet);
@@ -323,7 +336,7 @@ class MyHashSetTest {
 
     @Test
     void clear_Normal() {
-        bigPrep(32);
+        bigPrep();
         int counter = 0;
 
         mySet.clear();
@@ -333,16 +346,16 @@ class MyHashSetTest {
             counter++;
         }
 
-        assertEquals(0, counter, "Elements are being found in Set after a clear");
+        assertEquals(0, counter, "Elements are being found in Set by the iterator, even after a clear");
     }
 
     @Test
     void clear_Edge_modCount() {
-        bigPrep(32);
+        bigPrep();
         Iterator<String> sitter = mySet.iterator();
 
         mySet.clear();
-        bigPrep(32);
+        bigPrep();
 
         assertThrows(ConcurrentModificationException.class, sitter::next, "clear() seems to be resetting the mod_count");
     }
@@ -367,14 +380,12 @@ class MyHashSetTest {
     /**
      * Helper method to populate 'mySet' with a larger set of strings for more extensive testing.
      * Note: This method assumes 'mySet' is already initialized.
-     *
-     * @param numToAdd  The number of integers to add to mySet.
      */
-    void bigPrep(int numToAdd) {
+    void bigPrep() {
         String valToAdd;
 
         // Adding a larger set of strings for testing
-        for (int i = 0; i < numToAdd; i++) {
+        for (int i = 0; i < 32; i++) {
             valToAdd = ((Integer) i).toString();
             mySet.add(valToAdd);
         }

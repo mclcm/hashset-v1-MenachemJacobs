@@ -84,15 +84,12 @@ public class MyHashSet<E> implements Set<E> {
     @Override
     public boolean contains(Object o) {
         if (o != null) {
-            classCompatibilityCheck(o.getClass());
+            classCompatibilityCheck(o);
         }
 
-        int indexToCheck;
-
-        if (o == null)
-            indexToCheck = 0;
-        else
-            indexToCheck = Math.abs(Objects.hashCode(o)) % backingStore.length;
+        //Index of interior list to be checked. Normally the local hash-code is called
+        // but if the passed value is null, that needs to be hard-coded to 0, as null has no hash ability, and no other value can be assured to be in the outer index
+        int indexToCheck = (o == null) ? 0 : Math.abs(Objects.hashCode(o)) % backingStore.length;
 
         return backingStore[indexToCheck] != null && backingStore[indexToCheck].contains(o);
     }
@@ -114,8 +111,6 @@ public class MyHashSet<E> implements Set<E> {
      * elements in the Set.
      */
     private class MyIterator implements Iterator<E> {
-        LinkedList<Integer> ss = new LinkedList<Integer>();
-
         int outIndex = 0;
         int inIndex = 1;
         boolean existsSubsequent = !isEmpty();
@@ -309,7 +304,7 @@ public class MyHashSet<E> implements Set<E> {
     @Override
     public boolean add(Object e) {
         if (e != null)
-            classCompatibilityCheck(e.getClass());
+            classCompatibilityCheck(e);
 
         boolean returnVal = false;
 
@@ -344,28 +339,25 @@ public class MyHashSet<E> implements Set<E> {
      * element and the addition is successful; {@code false} otherwise
      */
     private boolean addNotDuple(Object e) {
-        //index of interior list to be amended
-        int indexToAddTo;
+        //Index of interior list to be amended. Normally the local hash-code is called
+        // but if the passed value is null, that needs to be hard-coded to 0, as null has no hash ability, and no other value can be assured to be in the outer index
+        int indexToAddTo = (e == null) ? 0 : Math.abs(Objects.hashCode(e)) % backingStore.length;
 
-        if (e == null)
-            indexToAddTo = 0;
-        else
-            indexToAddTo = Math.abs(Objects.hashCode(e)) % backingStore.length;
-
-        //If there is no array there, initialize one.
+        //If there is no array at that index, initialize one.
         if (backingStore[indexToAddTo] == null)
             //This is the only way to initialize interior lists.
             backingStore[indexToAddTo] = new ArrayList<>();
 
         List<E> listToAmend = backingStore[indexToAddTo];
 
-        //checks for an overflow, and then trips the flag. This cannot be undone except by refactor of clear().
+        //checks for an overflow, and then trips the flag. This cannot be undone except by refactor() of clear().
         if (!overFlowFlag && size + 1 == Integer.MAX_VALUE)
             overFlowFlag = true;
 
         //All that, to get to this. The actual add command.
         boolean returnVal = listToAmend.add((E) e);
 
+        //meta data modification
         size++;
         mod_count++;
 
@@ -401,7 +393,7 @@ public class MyHashSet<E> implements Set<E> {
         backingStore = new List[backingStore.length * 2];
 
         //copy out of storage to new struct
-        //it is necessary that a refactor not double count length. Is that a mod?
+        //it is necessary that a refactor not double count length.
         size = 0;
         overFlowFlag = false;
 
@@ -433,16 +425,18 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean remove(Object o) {
-        classCompatibilityCheck(o.getClass());
+        classCompatibilityCheck(o);
 
-        int indexForRemoval = Math.abs(o.hashCode()) % backingStore.length;
+        //Index of interior list to remove from. Normally the local hash-code is called
+        //but if the passed value is null, that needs to be hard-coded to 0, as null has no hash ability, and no other value can be assured to be in the outer index
+        int indexToRemoveFrom = (o == null) ? 0 : Math.abs(Objects.hashCode(o)) % backingStore.length;
 
         //return is false if there is no list at the given index, otherwise return is equal to the return of the local remove method
-        boolean returnVal = backingStore[indexForRemoval] != null && backingStore[indexForRemoval].remove(o);
+        boolean returnVal = backingStore[indexToRemoveFrom] != null && backingStore[indexToRemoveFrom].remove(o);
 
         //If something was removed, check if its list is now empty, and if so clear it. Dropping empty lists helps my iterator method.
-        if (returnVal && backingStore[indexForRemoval].isEmpty())
-            backingStore[indexForRemoval] = null;
+        if (returnVal && backingStore[indexToRemoveFrom].isEmpty())
+            backingStore[indexToRemoveFrom] = null;
 
         //if something was actually removed, update the stats
         if (returnVal) {
@@ -478,7 +472,7 @@ public class MyHashSet<E> implements Set<E> {
 
         //If a single value from the passed collection is not found in the Set, the return is set to false, and the loop stops looking.
         for (Object el : c) {
-            classCompatibilityCheck(el.getClass());
+            classCompatibilityCheck(el);
             if (!contains(el)) {
                 returnVal = false;
                 break;
@@ -511,7 +505,7 @@ public class MyHashSet<E> implements Set<E> {
     @Override
     public boolean addAll(Collection<? extends E> c) {
         for (Object el : c) {
-            classCompatibilityCheck(el.getClass());
+            classCompatibilityCheck(el);
 
             if (!contains(el))
                 add(el);
@@ -546,7 +540,7 @@ public class MyHashSet<E> implements Set<E> {
         int oldSize = size;
 
         for (Object el : c) {
-            classCompatibilityCheck(el.getClass());
+            classCompatibilityCheck(el);
             remove(el);
         }
 
@@ -576,7 +570,7 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean removeAll(Collection<?> c) {
-        classCompatibilityCheck(c.getClass());
+        classCompatibilityCheck(c);
         return false;
     }
 
@@ -595,13 +589,17 @@ public class MyHashSet<E> implements Set<E> {
         mod_count++;
     }
 
-    private void classCompatibilityCheck(Class<?> o) {
+    private void classCompatibilityCheck(Object o) {
         // TODO: fix
 //        for (E el : this) {
 //            if (!o.getComponentType().isAssignableFrom(el.getClass())) {
 //                throw new ClassCastException("Incompatible array type for the elements in the list.");
 //            }
 //            break;
+//        }
+
+//        if (!clazz.isInstance(o)) {
+//            throw new ClassCastException("Input object is not compatible with the expected type");
 //        }
     }
 }
