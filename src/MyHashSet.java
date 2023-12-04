@@ -339,8 +339,7 @@ public class MyHashSet<E> implements Set<E> {
      * element and the addition is successful; {@code false} otherwise
      */
     private boolean addNotDuple(Object e) {
-        //Index of interior list to be amended. Normally the local hash-code is called
-        // but if the passed value is null, that needs to be hard-coded to 0, as null has no hash ability, and no other value can be assured to be in the outer index
+        //Index of interior list to be amended. Normally the local hash-code is called, but if the passed value is null, that needs to be hard-coded to 0.
         int indexToAddTo = (e == null) ? 0 : Math.abs(Objects.hashCode(e)) % backingStore.length;
 
         //If there is no array at that index, initialize one.
@@ -427,18 +426,17 @@ public class MyHashSet<E> implements Set<E> {
     public boolean remove(Object o) {
         classCompatibilityCheck(o);
 
-        //Index of interior list to remove from. Normally the local hash-code is called
-        //but if the passed value is null, that needs to be hard-coded to 0, as null has no hash ability, and no other value can be assured to be in the outer index
+        //Index of interior list to remove from. Normally the local hash-code is called, but if the passed value is null, that needs to be hard-coded to 0.
         int indexToRemoveFrom = (o == null) ? 0 : Math.abs(Objects.hashCode(o)) % backingStore.length;
 
-        //return is false if there is no list at the given index, otherwise return is equal to the return of the local remove method
+        //return false if there is no list at the given index, otherwise return is equal to the return of the local remove method
         boolean returnVal = backingStore[indexToRemoveFrom] != null && backingStore[indexToRemoveFrom].remove(o);
 
         //If something was removed, check if its list is now empty, and if so clear it. Dropping empty lists helps my iterator method.
         if (returnVal && backingStore[indexToRemoveFrom].isEmpty())
             backingStore[indexToRemoveFrom] = null;
 
-        //if something was actually removed, update the stats
+        //if something was actually removed, update the meta-data
         if (returnVal) {
             size--;
             mod_count++;
@@ -504,6 +502,8 @@ public class MyHashSet<E> implements Set<E> {
      */
     @Override
     public boolean addAll(Collection<? extends E> c) {
+        int oldMod = mod_count;
+
         for (Object el : c) {
             classCompatibilityCheck(el);
 
@@ -511,7 +511,8 @@ public class MyHashSet<E> implements Set<E> {
                 add(el);
         }
 
-        return true;
+        //Check for modification
+        return mod_count != oldMod;
     }
 
     /**
@@ -544,7 +545,8 @@ public class MyHashSet<E> implements Set<E> {
             remove(el);
         }
 
-        return oldSize == size;
+        //Check for size change
+        return oldSize != size;
     }
 
     /**

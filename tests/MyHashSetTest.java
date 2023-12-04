@@ -342,7 +342,7 @@ class MyHashSetTest {
         mySet.clear();
         assertTrue(mySet.isEmpty(), "Clearing isn't resetting the size to zero");
 
-        for (String word : mySet) {
+        for (String ignored : mySet) {
             counter++;
         }
 
@@ -359,13 +359,6 @@ class MyHashSetTest {
 
         assertThrows(ConcurrentModificationException.class, sitter::next, "clear() seems to be resetting the mod_count");
     }
-
-    //assertThrows(ConcurrentModificationException.class, () -> {
-    //            prep();
-    //            while (sitter.hasNext()) {
-    //                testable.add((String) sitter.next());
-    //            }
-    //        });
 
     /**
      * Helper method to prepare the 'mySet' for tests by adding some sample strings.
