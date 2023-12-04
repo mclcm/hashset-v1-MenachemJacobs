@@ -72,7 +72,7 @@ class MyHashSetTest {
 
     @Test
     void contains_Edge_Refactor() {
-        bigPrep();
+        bigPrep(32);
 
         assertTrue(mySet.contains("30"));
     }
@@ -111,7 +111,7 @@ class MyHashSetTest {
     @Test
     void iterator_Edge_loadFactorHuge() {
         mySet = new MyHashSet<>(16, 100);
-        bigPrep();
+        bigPrep(32);
 
         ArrayList<String> testable = new ArrayList<>(mySet);
 
@@ -205,7 +205,7 @@ class MyHashSetTest {
 
     @Test
     void toArray_typedReturn_Normal() {
-        bigPrep();
+        bigPrep(32);
 
         String[] testable = mySet.toArray(new String[40]);
         int counter = 0;
@@ -229,7 +229,7 @@ class MyHashSetTest {
 
     @Test
     void toArray_typedReturn_Edge_passedArrayToShort() {
-        bigPrep();
+        bigPrep(32);
         String[] testable = mySet.toArray(new String[25]);
 
         assertEquals(mySet.size(), testable.length, "toArray(T[] a) isn't resizing past arrays properly");
@@ -323,7 +323,7 @@ class MyHashSetTest {
 
     @Test
     void clear_Normal() {
-        bigPrep();
+        bigPrep(32);
         int counter = 0;
 
         mySet.clear();
@@ -338,11 +338,11 @@ class MyHashSetTest {
 
     @Test
     void clear_Edge_modCount() {
-        bigPrep();
+        bigPrep(32);
         Iterator<String> sitter = mySet.iterator();
 
         mySet.clear();
-        bigPrep();
+        bigPrep(32);
 
         assertThrows(ConcurrentModificationException.class, sitter::next, "clear() seems to be resetting the mod_count");
     }
@@ -354,28 +354,50 @@ class MyHashSetTest {
     //            }
     //        });
 
+    /**
+     * Helper method to prepare the 'mySet' for tests by adding some sample strings.
+     * Note: This method assumes 'mySet' is initialized and empty.
+     */
     void prep() {
         mySet.add("Poe");
         mySet.add("E.");
         mySet.add("Near a raven");
     }
 
-    void bigPrep() {
+    /**
+     * Helper method to populate 'mySet' with a larger set of strings for more extensive testing.
+     * Note: This method assumes 'mySet' is already initialized.
+     *
+     * @param numToAdd  The number of integers to add to mySet.
+     */
+    void bigPrep(int numToAdd) {
         String valToAdd;
 
-        for (int i = 0; i < 32; i++) {
+        // Adding a larger set of strings for testing
+        for (int i = 0; i < numToAdd; i++) {
             valToAdd = ((Integer) i).toString();
             mySet.add(valToAdd);
         }
     }
 
+    /**
+     * Helper method to assert that each element in a set is found in an array
+     * and vice versa, checking both presence and order.
+     *
+     * @param m                   The set to be checked against the array.
+     * @param n                   The array to be checked against the set.
+     * @param setDoesNotContain   The error message if an element in the array is not found in the set.
+     * @param arrayDoesNotContain The error message if an element in the set is not found in the array.
+     */
     void eachContainsEach(Set<String> m, Object[] n, String setDoesNotContain, String arrayDoesNotContain) {
         int counter = 0;
 
+        // Check that each element in the array is found in the set
         for (Object word : n) {
             assertTrue(m.contains(word), setDoesNotContain);
         }
 
+        // Check that each element in the set is found in the array and in the correct order
         for (String word : m) {
             while (!n[counter].equals(word) && counter < m.size()) {
                 counter++;
