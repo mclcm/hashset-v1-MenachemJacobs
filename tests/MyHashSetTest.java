@@ -12,7 +12,7 @@ class MyHashSetTest {
 
     @BeforeEach
     void setUp() {
-        mySet = new MyHashSet();
+        mySet = new MyHashSet<>();
     }
 
     @Test
@@ -34,6 +34,23 @@ class MyHashSetTest {
         assertTrue(mySet.remove("Poe"));
         assertEquals(2, mySet.size(), "size() fails to account for diminution");
     }
+
+//    @Test
+//    void size_Edge_OverFlow() {
+//        Set<Object> testableOne = new MyHashSet<>();
+//        Set<Object> testableTwo = new MyHashSet<>();
+//        Integer valToAdd;
+//
+//        for (int i = 0; i < Integer.MAX_VALUE; i++) {
+//            valToAdd = i;
+//            testableOne.add(valToAdd);
+//            testableTwo.add(valToAdd);
+//        }
+//        testableTwo.add("OneMore");
+//
+//        assertEquals(testableOne.size(), testableTwo.size(), "OverFlows in the size field are being improperly handled");
+//    }
+
 
     @Test
     void isEmpty_Edge_InAndOut() {
@@ -178,11 +195,11 @@ class MyHashSetTest {
         int counter = 0;
 
         for (Object el : testable) {
-            assertTrue(multiTypedSet.contains(el), "Multityping the Set is messing with the elements returned by the toArray() method");
+            assertTrue(multiTypedSet.contains(el), "MultiTyping the Set is messing with the elements returned by the toArray() method");
         }
 
         for (Object el : multiTypedSet) {
-            assertEquals(testable[counter++], el, "Multityping the Set is breaking the order of return for the toArray() method");
+            assertEquals(testable[counter++], el, "MultiTyping the Set is breaking the order of return for the toArray() method");
         }
     }
 
@@ -217,8 +234,6 @@ class MyHashSetTest {
 
         assertEquals(mySet.size(), testable.length, "toArray(T[] a) isn't resizing past arrays properly");
 
-        int counter = 0;
-
         String errorOne = "Element not present in the Set are being returned by the toArray(T[] a) if the passed array has been resized";
         String errorTwo = "Elements from the Set aren't being found in the return from toArray(T[] a) if if the passed array has been resized";
 
@@ -228,9 +243,7 @@ class MyHashSetTest {
     @Test
     void toArray_typedReturn_Edge_incompatiblePassedArrayType() {
         prep();
-        assertThrows(ArrayStoreException.class, () -> {
-            mySet.toArray(new Boolean[3]);
-        }, "toArray(T[] a) isn't throwing an error when passed an array of incompatible type");
+        assertThrows(ArrayStoreException.class, () -> mySet.toArray(new Boolean[3]), "toArray(T[] a) isn't throwing an error when passed an array of incompatible type");
     }
 
     @Test
@@ -298,7 +311,41 @@ class MyHashSetTest {
         assertFalse(mySet.containsAll(testable), "containsAll() is returning true for distinguished sets");
     }
 
-    //addAll retainAll clear
+    @Test
+    void containsAll_Edge_emptySets() {
+        prep();
+        Set<String> testable = new HashSet<>(mySet);
+        mySet.clear();
+        testable.clear();
+
+        assertTrue(mySet.containsAll(testable), "Set returns false for containsAll() when the is empty, even when taking an empty collection as input");
+    }
+
+    @Test
+    void clear_Normal() {
+        bigPrep();
+        int counter = 0;
+
+        mySet.clear();
+        assertTrue(mySet.isEmpty(), "Clearing isn't resetting the size to zero");
+
+        for (String word : mySet) {
+            counter++;
+        }
+
+        assertEquals(0, counter, "Elements are being found in Set after a clear");
+    }
+
+    @Test
+    void clear_Edge_modCount() {
+        bigPrep();
+        Iterator<String> sitter = mySet.iterator();
+
+        mySet.clear();
+        bigPrep();
+
+        assertThrows(ConcurrentModificationException.class, sitter::next, "clear() seems to be resetting the mod_count");
+    }
 
     //assertThrows(ConcurrentModificationException.class, () -> {
     //            prep();
