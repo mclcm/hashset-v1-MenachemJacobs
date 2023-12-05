@@ -56,10 +56,12 @@ class MyHashSetTest {
     void isEmpty_Edge_InAndOut() {
         prep();
 
-        mySet.clear();
+        for (Object word : mySet.toArray()) {
+            mySet.remove(word);
+        }
 
         assertTrue(mySet.isEmpty(), "isEmpty() isn't returning true after a clear");
-        assertEquals(0, mySet.size(), "Size is not decrementing to zero after clear");
+        assertEquals(0, mySet.size(), "Size is not decrementing to zero after all elements are removed");
     }
 
     @Test
@@ -83,8 +85,10 @@ class MyHashSetTest {
         assertFalse(mySet.contains(null), "null is being found as an element despite not being added");
 
         mySet.add(null);
-
         assertTrue(mySet.contains(null), "null is not being found as an element despite being added");
+
+        mySet.remove(null);
+        assertFalse(mySet.contains(null), "null is being found as an element despite being removed");
     }
 
     @Test
@@ -147,6 +151,7 @@ class MyHashSetTest {
     @Test
     void next_Normal() {
         prep();
+
         ArrayList<String> testable = new ArrayList<>();
         testable.add("Poe");
         testable.add("E.");
@@ -169,18 +174,13 @@ class MyHashSetTest {
     @Test
     void toArray_Normal() {
         prep();
-        ArrayList<String> testable = new ArrayList<>();
-        testable.add("Poe");
-        testable.add("E.");
-        testable.add("Near a raven");
 
-        Object[] outray = mySet.toArray();
+        String errorMessageOne = "Elements in returned array are not present this Set";
+        String errorMessageTwo = "Returned array does not contain all element from this Set";
 
-        for (Object word : outray) {
-            assertTrue(testable.contains(word), "Elements have been improperly added to the Set");
-        }
+        eachContainsEach(mySet, mySet.toArray(), errorMessageOne, errorMessageTwo);
 
-        assertEquals(testable.size(), outray.length, "The wrong number of elements have been added to the set");
+        assertEquals(mySet.size(), mySet.toArray().length, "The wrong number of elements have been added to the set");
     }
 
     @Test
